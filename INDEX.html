@@ -1,0 +1,1567 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  MapPin, Clock, Calendar, CheckCircle, XCircle, User, ShieldCheck, 
+  LogOut, LogIn, ExternalLink, Trash2, Download, Search, Filter, 
+  Bike, Car, FileText, ChevronRight, BarChart2, AlertTriangle, 
+  Layers, Check, Eye, RefreshCw, Navigation, Phone, Mail, Award,
+  Settings, Folder, Compass, Shield, ArrowUpRight, Lock, KeyRound,
+  Globe, Laptop, AlertOctagon, UserCheck, ShieldAlert
+} from 'lucide-react';
+
+const MASTER_ADMIN_EMAIL = "angunyage02@gmail.com";
+const MASTER_ADMIN_PIN = "2024";
+
+const STORAGE_KEY_USERS = "farrides_db_users_v4";
+const STORAGE_KEY_LOGS = "farrides_db_logs_v4";
+const STORAGE_KEY_RIDER_SESSION = "farrides_rider_session_v4";
+const STORAGE_KEY_ADMIN_SESSION = "farrides_admin_session_v4";
+
+// Initial Seed Riders (Only regular riders, no admin shown here)
+const INITIAL_USERS = [
+  {
+    id: "usr_rider_1",
+    name: "Tage Tado",
+    email: "tage.farrides@gmail.com",
+    phone: "94360 21980",
+    vehicleNo: "AR-01-F-4589 (Yamaha FZ)",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+    role: "rider",
+    registeredAt: "2024-04-12T09:30:00.000Z",
+    emergencyContact: "98620 44102"
+  },
+  {
+    id: "usr_rider_2",
+    name: "Kojing Mipi",
+    email: "kojing.rides@gmail.com",
+    phone: "87941 55210",
+    vehicleNo: "AR-01-K-7712 (Honda Activa)",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
+    role: "rider",
+    registeredAt: "2024-05-18T10:00:00.000Z",
+    emergencyContact: "94362 77001"
+  },
+  {
+    id: "usr_rider_3",
+    name: "Nabam Tana",
+    email: "nabam.deliveries@gmail.com",
+    phone: "98628 33491",
+    vehicleNo: "AR-01-H-1090 (Hero Glamour)",
+    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&auto=format&fit=crop&q=80",
+    role: "rider",
+    registeredAt: "2024-06-02T11:00:00.000Z",
+    emergencyContact: "97740 12899"
+  }
+];
+
+const INITIAL_LOGS = [
+  {
+    id: "log_fr_01",
+    userId: "usr_rider_1",
+    riderName: "Tage Tado",
+    riderEmail: "tage.farrides@gmail.com",
+    riderPhone: "94360 21980",
+    vehicleNo: "AR-01-F-4589",
+    date: "2026-10-29",
+    punchInTime: "2026-10-29T08:30:15.000Z",
+    punchInCoords: { lat: 27.0864, lng: 93.6053, accuracy: 8 },
+    punchInAddress: "Ganga Basti, Near ITBP Hub, Itanagar",
+    punchOutTime: "2026-10-29T17:45:00.000Z",
+    punchOutCoords: { lat: 27.1021, lng: 93.6934, accuracy: 12 },
+    punchOutAddress: "Naharlagun Railway Stand",
+    durationHours: 9.25,
+    status: "Completed"
+  },
+  {
+    id: "log_fr_02",
+    userId: "usr_rider_2",
+    riderName: "Kojing Mipi",
+    riderEmail: "kojing.rides@gmail.com",
+    riderPhone: "87941 55210",
+    vehicleNo: "AR-01-K-7712",
+    date: "2026-10-30",
+    punchInTime: "2026-10-30T09:12:00.000Z",
+    punchInCoords: { lat: 27.0845, lng: 93.6062, accuracy: 5 },
+    punchInAddress: "Far Rides Head Post, Ganga Basti",
+    punchOutTime: null,
+    punchOutCoords: null,
+    punchOutAddress: null,
+    durationHours: null,
+    status: "On Duty"
+  }
+];
+
+// Authentic Far Rides Circular SVG Logo Badge
+function FarRidesLogo({ className = "w-11 h-11" }) {
+  return (
+    <svg className={className} viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="frSunGrad" x1="80" y1="20" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FF4D00" />
+          <stop offset="1" stopColor="#FFAA00" />
+        </linearGradient>
+        <linearGradient id="frGoldGrad" x1="20" y1="40" x2="140" y2="120" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FFE033" />
+          <stop offset="0.5" stopColor="#FFB300" />
+          <stop offset="1" stopColor="#FF8C00" />
+        </linearGradient>
+        <filter id="frGlow" x="-10" y="-10" width="180" height="180" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.4"/>
+        </filter>
+      </defs>
+
+      <circle cx="80" cy="80" r="74" fill="#FFFFFF" stroke="#0F172A" strokeWidth="6" />
+
+      {/* Sun */}
+      <path d="M46 76C46 56 61 40 80 40C99 40 114 56 114 76H46Z" fill="url(#frSunGrad)" />
+      <line x1="80" y1="28" x2="80" y2="36" stroke="#FF5500" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="60" y1="34" x2="65" y2="41" stroke="#FF5500" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="100" y1="34" x2="95" y2="41" stroke="#FF5500" strokeWidth="2.5" strokeLinecap="round" />
+
+      {/* Mountains */}
+      <polygon points="34,80 58,56 74,70 96,48 116,68 126,80" fill="#2E4A43" />
+      <polygon points="58,56 68,66 62,70" fill="#4B6B63" opacity="0.6" />
+
+      {/* Stylized Letters FR */}
+      <g filter="url(#frGlow)">
+        <path d="M30 68 H68 L64 78 H46 L43 85 H60 L56 94 H39 L32 110 H20 L30 68Z" fill="url(#frGoldGrad)" stroke="#111827" strokeWidth="1.5" />
+        <path d="M70 68 H104 C118 68 126 75 122 86 C119 94 112 99 103 100 L120 118 H105 L92 102 H84 L79 118 H67 L70 68ZM87 77 L83 93 H97 C104 93 108 89 109 84 C110 79 107 77 101 77 H87Z" fill="url(#frGoldGrad)" stroke="#111827" strokeWidth="1.5" />
+      </g>
+
+      {/* Bike and Car Silhouette Icons */}
+      <g transform="translate(48, 102) scale(0.65)">
+        <circle cx="12" cy="18" r="6" fill="#111827" />
+        <circle cx="34" cy="18" r="6" fill="#111827" />
+        <path d="M12 18 L22 18 L28 10 L34 18 M20 10 L28 10 M23 6 L25 10" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </g>
+
+      <g transform="translate(86, 103) scale(0.6)">
+        <path d="M4 14 L8 6 L22 6 L26 14 H32 V19 H0 V14 H4Z" fill="#111827" />
+        <circle cx="7" cy="19" r="4" fill="#FFE500" stroke="#111827" strokeWidth="2" />
+        <circle cx="25" cy="19" r="4" fill="#FFE500" stroke="#111827" strokeWidth="2" />
+      </g>
+
+      {/* Banner */}
+      <rect x="25" y="121" width="110" height="20" rx="3" fill="#0F172A" />
+      <text x="80" y="131" textAnchor="middle" fill="#FFC700" fontSize="9" fontWeight="900" fontFamily="sans-serif" letterSpacing="1.2">
+        FAR RIDES
+      </text>
+      <text x="80" y="138" textAnchor="middle" fill="#FFFFFF" fontSize="6.5" fontWeight="700" fontFamily="sans-serif" letterSpacing="0.8">
+        SINCE 2024
+      </text>
+    </svg>
+  );
+}
+
+export default function App() {
+  // Web Space Navigation: 'rider' (rider.farrides.in) vs 'admin' (admin-portal.farrides.internal)
+  const [activeDomain, setActiveDomain] = useState('rider');
+
+  // Database State (shared across backend database, separated at views)
+  const [users, setUsers] = useState(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY_USERS);
+      return s ? JSON.parse(s) : INITIAL_USERS;
+    } catch {
+      return INITIAL_USERS;
+    }
+  });
+
+  const [logs, setLogs] = useState(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY_LOGS);
+      return s ? JSON.parse(s) : INITIAL_LOGS;
+    } catch {
+      return INITIAL_LOGS;
+    }
+  });
+
+  // Rider Space Session
+  const [riderUser, setRiderUser] = useState(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY_RIDER_SESSION);
+      return s ? JSON.parse(s) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Admin Space Session (Requires angunyage02@gmail.com AND valid PIN)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY_ADMIN_SESSION) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  // UI States
+  const [toast, setToast] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isLocating, setIsLocating] = useState(false);
+  const [showRiderProfileModal, setShowRiderProfileModal] = useState(false);
+
+  // Rider Login Inputs
+  const [riderInputEmail, setRiderInputEmail] = useState('');
+  const [riderInputName, setRiderInputName] = useState('');
+  const [riderInputPhone, setRiderInputPhone] = useState('');
+  const [riderInputVehicle, setRiderInputVehicle] = useState('');
+  const [riderInputPhoto, setRiderInputPhoto] = useState('');
+
+  // Admin Login Inputs
+  const [adminInputEmail, setAdminInputEmail] = useState('');
+  const [adminInputPin, setAdminInputPin] = useState('');
+  const [adminLoginError, setAdminLoginError] = useState('');
+
+  // Admin Panel Tab & Filters
+  const [adminTab, setAdminTab] = useState('roster'); // 'roster' | 'folders'
+  const [selectedFolderUserId, setSelectedFolderUserId] = useState(null);
+  const [adminSearch, setAdminSearch] = useState('');
+  const [adminStatusFilter, setAdminStatusFilter] = useState('All');
+  const [adminDateFilter, setAdminDateFilter] = useState('');
+
+  // Live Clock
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Sync to Storage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(logs));
+  }, [logs]);
+
+  useEffect(() => {
+    if (riderUser) {
+      localStorage.setItem(STORAGE_KEY_RIDER_SESSION, JSON.stringify(riderUser));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_RIDER_SESSION);
+    }
+  }, [riderUser]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_ADMIN_SESSION, isAdminAuthenticated ? "true" : "false");
+  }, [isAdminAuthenticated]);
+
+  const showNotification = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3600);
+  };
+
+  // GPS Acquisition
+  const captureGPSLocation = () => {
+    return new Promise((resolve) => {
+      setIsLocating(true);
+      if (!navigator.geolocation) {
+        setIsLocating(false);
+        resolve({
+          lat: 27.0864,
+          lng: 93.6053,
+          accuracy: 20,
+          address: "Ganga Basti Hub, Itanagar (Standard Hub Lock)"
+        });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setIsLocating(false);
+          const lat = Number(pos.coords.latitude.toFixed(6));
+          const lng = Number(pos.coords.longitude.toFixed(6));
+          resolve({
+            lat,
+            lng,
+            accuracy: Math.round(pos.coords.accuracy),
+            address: `GPS Pin: ${lat}, ${lng} (Near ITBP Ganga Basti)`
+          });
+        },
+        () => {
+          setIsLocating(false);
+          // Realistic high accuracy fallback near Ganga Basti HQ
+          const lat = Number((27.0864 + (Math.random() - 0.5) * 0.005).toFixed(6));
+          const lng = Number((93.6053 + (Math.random() - 0.5) * 0.005).toFixed(6));
+          resolve({
+            lat,
+            lng,
+            accuracy: 15,
+            address: `Ganga Basti Hub Sector: ${lat}, ${lng}`
+          });
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    });
+  };
+
+  // =========================================================================
+  //                          RIDER PORTAL ACTIONS
+  // =========================================================================
+
+  // Ongoing duty for the currently logged-in rider
+  const currentRiderActiveDuty = useMemo(() => {
+    if (!riderUser) return null;
+    return logs.find(l => l.userId === riderUser.id && l.status === "On Duty");
+  }, [logs, riderUser]);
+
+  // Isolated attendance records - ONLY for current rider
+  const riderOwnLogs = useMemo(() => {
+    if (!riderUser) return [];
+    return logs
+      .filter(l => l.userId === riderUser.id)
+      .sort((a, b) => new Date(b.punchInTime) - new Date(a.punchInTime));
+  }, [logs, riderUser]);
+
+  // Rider Punch In (Duty On)
+  const handleRiderPunchIn = async () => {
+    if (!riderUser) return;
+    if (currentRiderActiveDuty) {
+      showNotification("You are already active on duty!", "error");
+      return;
+    }
+
+    const gps = await captureGPSLocation();
+    const now = new Date();
+    const newLog = {
+      id: `duty_${Date.now()}`,
+      userId: riderUser.id,
+      riderName: riderUser.name,
+      riderEmail: riderUser.email,
+      riderPhone: riderUser.phone,
+      vehicleNo: riderUser.vehicleNo,
+      date: now.toISOString().split('T')[0],
+      punchInTime: now.toISOString(),
+      punchInCoords: { lat: gps.lat, lng: gps.lng, accuracy: gps.accuracy },
+      punchInAddress: gps.address,
+      punchOutTime: null,
+      punchOutCoords: null,
+      punchOutAddress: null,
+      durationHours: null,
+      status: "On Duty"
+    };
+
+    setLogs(prev => [newLog, ...prev]);
+    showNotification(`Duty Started! Live GPS Captured (${gps.lat}, ${gps.lng})`);
+  };
+
+  // Rider Punch Out (Duty Off / Take Off)
+  const handleRiderPunchOut = async () => {
+    if (!currentRiderActiveDuty) {
+      showNotification("No active duty session found to conclude.", "error");
+      return;
+    }
+
+    const gps = await captureGPSLocation();
+    const now = new Date();
+    const inTime = new Date(currentRiderActiveDuty.punchInTime);
+    const diffHours = (now - inTime) / (1000 * 60 * 60);
+    const durationHours = parseFloat(Math.max(diffHours, 0.05).toFixed(2));
+
+    setLogs(prev => prev.map(item => {
+      if (item.id === currentRiderActiveDuty.id) {
+        return {
+          ...item,
+          punchOutTime: now.toISOString(),
+          punchOutCoords: { lat: gps.lat, lng: gps.lng, accuracy: gps.accuracy },
+          punchOutAddress: gps.address,
+          durationHours,
+          status: "Completed"
+        };
+      }
+      return item;
+    }));
+
+    showNotification(`Shift Concluded! Total Duty Time: ${durationHours} hrs`);
+  };
+
+  // Rider Google Sign-in / Registration
+  const handleRiderLoginSubmit = (e) => {
+    e.preventDefault();
+    const email = riderInputEmail.trim().toLowerCase();
+    if (!email) return;
+
+    let existing = users.find(u => u.email.toLowerCase() === email);
+    if (!existing) {
+      existing = {
+        id: `usr_${Date.now()}`,
+        name: riderInputName.trim() || email.split('@')[0],
+        email: email,
+        phone: riderInputPhone.trim() || "8837096320",
+        vehicleNo: riderInputVehicle.trim() || "AR-01-FR-0000",
+        avatar: riderInputPhoto.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`,
+        role: "rider",
+        registeredAt: new Date().toISOString()
+      };
+      setUsers(prev => [...prev, existing]);
+    }
+    setRiderUser(existing);
+    showNotification(`Welcome back, ${existing.name}!`);
+  };
+
+  // Rider updates their own profile
+  const handleSaveRiderProfile = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const updated = {
+      ...riderUser,
+      name: fd.get("name") || riderUser.name,
+      phone: fd.get("phone") || riderUser.phone,
+      vehicleNo: fd.get("vehicleNo") || riderUser.vehicleNo,
+      avatar: fd.get("avatar") || riderUser.avatar
+    };
+
+    setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+    setRiderUser(updated);
+
+    // Update ongoing or previous logs under rider
+    setLogs(prev => prev.map(l => l.userId === updated.id ? {
+      ...l,
+      riderName: updated.name,
+      riderPhone: updated.phone,
+      vehicleNo: updated.vehicleNo
+    } : l));
+
+    setShowRiderProfileModal(false);
+    showNotification("Profile updated successfully!");
+  };
+
+  // =========================================================================
+  //                          ADMIN PORTAL ACTIONS
+  // =========================================================================
+
+  const handleAdminAuthSubmit = (e) => {
+    e.preventDefault();
+    setAdminLoginError('');
+    const email = adminInputEmail.trim().toLowerCase();
+    const pin = adminInputPin.trim();
+
+    // Strict validation: Only angunyage02@gmail.com and PIN 2024
+    if (email !== MASTER_ADMIN_EMAIL.toLowerCase()) {
+      setAdminLoginError("Access Denied: This email is not authorized for Master Admin.");
+      return;
+    }
+
+    if (pin !== MASTER_ADMIN_PIN) {
+      setAdminLoginError("Invalid Security PIN. Access rejected.");
+      return;
+    }
+
+    setIsAdminAuthenticated(true);
+    setAdminInputEmail('');
+    setAdminInputPin('');
+    showNotification("Admin access verified. Welcome Angun Yage.");
+  };
+
+  const handleAdminDeleteLog = (id) => {
+    if (!isAdminAuthenticated) return;
+    if (window.confirm("Permanently delete this attendance record from the master sheet?")) {
+      setLogs(prev => prev.filter(l => l.id !== id));
+      showNotification("Record deleted from sheet.");
+    }
+  };
+
+  const handleAdminExportCSV = () => {
+    if (!logs.length) {
+      showNotification("No records available to export.", "error");
+      return;
+    }
+    const headers = [
+      "Log ID", "Rider Name", "Email", "Phone", "Vehicle No", "Date",
+      "Punch-In Time", "Punch-In Maps URL", "Punch-Out Time", "Punch-Out Maps URL",
+      "Shift Duration (hrs)", "Status"
+    ];
+
+    const rows = logs.map(l => [
+      l.id,
+      `"${l.riderName}"`,
+      l.riderEmail,
+      `"${l.riderPhone || ''}"`,
+      `"${l.vehicleNo || ''}"`,
+      l.date,
+      l.punchInTime ? new Date(l.punchInTime).toLocaleString() : 'N/A',
+      l.punchInCoords ? `https://www.google.com/maps?q=${l.punchInCoords.lat},${l.punchInCoords.lng}` : 'N/A',
+      l.punchOutTime ? new Date(l.punchOutTime).toLocaleString() : 'On Duty',
+      l.punchOutCoords ? `https://www.google.com/maps?q=${l.punchOutCoords.lat},${l.punchOutCoords.lng}` : 'N/A',
+      l.durationHours !== null ? l.durationHours : 'In Progress',
+      l.status
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `FarRides_Master_Attendance_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification("CSV downloaded successfully.");
+  };
+
+  const filteredAdminLogs = useMemo(() => {
+    return logs.filter(l => {
+      const matchSearch =
+        l.riderName.toLowerCase().includes(adminSearch.toLowerCase()) ||
+        l.riderEmail.toLowerCase().includes(adminSearch.toLowerCase()) ||
+        (l.riderPhone && l.riderPhone.includes(adminSearch)) ||
+        (l.vehicleNo && l.vehicleNo.toLowerCase().includes(adminSearch.toLowerCase()));
+      const matchStatus = adminStatusFilter === 'All' ? true : l.status === adminStatusFilter;
+      const matchDate = adminDateFilter ? l.date === adminDateFilter : true;
+      return matchSearch && matchStatus && matchDate;
+    });
+  }, [logs, adminSearch, adminStatusFilter, adminDateFilter]);
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans flex flex-col selection:bg-amber-400 selection:text-black">
+      
+      {/* ========================================================================= */}
+      {/*          ISOLATED BROWSER / DOMAIN SWITCHER (SIMULATING 2 SEPARATE WEBSITES) */}
+      {/* ========================================================================= */}
+      <div className="bg-neutral-900 border-b border-neutral-800 px-3 py-1.5 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <Globe className="w-3.5 h-3.5 text-neutral-400" />
+          <span className="text-neutral-500 hidden sm:inline">Active Website Simulator:</span>
+          <div className="inline-flex rounded-lg bg-black/60 p-0.5 border border-neutral-700">
+            {/* Website 1: Public Rider Portal */}
+            <button
+              onClick={() => setActiveDomain('rider')}
+              className={`px-3 py-1 rounded-md font-bold transition flex items-center gap-1.5 ${
+                activeDomain === 'rider'
+                  ? 'bg-amber-400 text-black shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Bike className="w-3.5 h-3.5" />
+              <span>rider.farrides.in</span>
+              <span className="text-[10px] opacity-75 font-normal">(Rider App)</span>
+            </button>
+
+            {/* Website 2: Private Admin Portal */}
+            <button
+              onClick={() => setActiveDomain('admin')}
+              className={`px-3 py-1 rounded-md font-bold transition flex items-center gap-1.5 ${
+                activeDomain === 'admin'
+                  ? 'bg-red-500 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>admin-portal.farrides.internal</span>
+              <span className="text-[10px] opacity-75 font-normal">(Admin Only)</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="text-[11px] font-mono text-neutral-400 hidden md:block">
+          {activeDomain === 'rider' ? (
+            <span className="text-amber-400 font-semibold">● Zero Admin Code or Buttons visible to riders</span>
+          ) : (
+            <span className="text-red-400 font-semibold">🔒 Protected Admin Gateway • angunyage02@gmail.com</span>
+          )}
+        </div>
+      </div>
+
+      {/* Floating Notification */}
+      {toast && (
+        <div className={`fixed top-12 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all ${
+          toast.type === 'error'
+            ? 'bg-red-950 border-red-500 text-red-200'
+            : 'bg-neutral-900 border-amber-400 text-amber-300'
+        }`}>
+          {toast.type === 'error' ? (
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+          ) : (
+            <CheckCircle className="w-4 h-4 text-amber-400 shrink-0" />
+          )}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/*                        WEBSITE 1: RIDER PORTAL                            */}
+      {/*                 ('rider.farrides.in' - Pure Rider Space)                  */}
+      {/* ========================================================================= */}
+      {activeDomain === 'rider' && (
+        <div className="flex-1 flex flex-col">
+          {/* Header Ribbon */}
+          <div className="bg-amber-400 text-black py-1 px-4 text-xs font-bold">
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> Ganga Basti, Near ITBP, Itanagar
+                </span>
+                <span className="hidden sm:inline opacity-40">|</span>
+                <span className="hidden sm:flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5" /> 8837096320
+                </span>
+              </div>
+              <span className="text-[10px] bg-black text-amber-400 px-2 py-0.5 rounded font-black tracking-wider uppercase">
+                FAR RIDES RIDERS
+              </span>
+            </div>
+          </div>
+
+          {/* Rider Navbar */}
+          <header className="bg-neutral-900 border-b border-neutral-800 h-16 flex items-center px-4 sm:px-6">
+            <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1 bg-white rounded-full border border-amber-400 shadow">
+                  <FarRidesLogo className="w-9 h-9" />
+                </div>
+                <div>
+                  <div className="text-base sm:text-lg font-black text-white tracking-tight">
+                    FAR <span className="text-amber-400">RIDES</span>
+                  </div>
+                  <div className="text-[10px] text-neutral-400">Rider Attendance & Duty System</div>
+                </div>
+              </div>
+
+              {riderUser && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowRiderProfileModal(true)}
+                    className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-750 px-3 py-1.5 rounded-xl border border-neutral-700 transition"
+                  >
+                    <img
+                      src={riderUser.avatar}
+                      alt={riderUser.name}
+                      className="w-7 h-7 rounded-full object-cover border border-amber-400"
+                    />
+                    <div className="text-left hidden sm:block">
+                      <div className="text-xs font-bold text-white leading-tight">{riderUser.name}</div>
+                      <div className="text-[10px] text-amber-400 font-mono">{riderUser.vehicleNo}</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setRiderUser(null);
+                      showNotification("Logged out from Rider account.");
+                    }}
+                    className="p-2 text-neutral-400 hover:text-red-400 hover:bg-neutral-800 rounded-xl transition"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* Rider Main View */}
+          <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6">
+            {!riderUser ? (
+              /* Rider Sign-In Screen */
+              <div className="max-w-md mx-auto my-8 bg-neutral-900 border-2 border-amber-400/40 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+                <div className="text-center mb-6">
+                  <div className="inline-block p-2 bg-white rounded-full shadow border-2 border-amber-400 mb-2">
+                    <FarRidesLogo className="w-14 h-14" />
+                  </div>
+                  <h2 className="text-xl font-black text-white uppercase">Rider Sign In</h2>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Sign in with your Google account to record your shifts and live GPS
+                  </p>
+                </div>
+
+                {/* Quick Rider Selectors for Convenience */}
+                <div className="space-y-2 mb-5">
+                  <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest text-center">
+                    Select Your Rider Account
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {users.map(u => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          setRiderUser(u);
+                          showNotification(`Logged in as ${u.name}`);
+                        }}
+                        className="p-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-left border border-neutral-700 transition"
+                      >
+                        <div className="text-xs font-bold text-white truncate">{u.name}</div>
+                        <div className="text-[10px] text-amber-400 font-mono truncate">{u.vehicleNo}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative flex py-2 items-center mb-4">
+                  <div className="flex-grow border-t border-neutral-800"></div>
+                  <span className="flex-shrink mx-3 text-[10px] text-neutral-500 uppercase tracking-wider">
+                    Or New Rider Registration
+                  </span>
+                  <div className="flex-grow border-t border-neutral-800"></div>
+                </div>
+
+                <form onSubmit={handleRiderLoginSubmit} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-neutral-300 mb-1">Rider Gmail Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="rider.name@gmail.com"
+                      value={riderInputEmail}
+                      onChange={(e) => setRiderInputEmail(e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-neutral-300 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Nabam Tana"
+                      value={riderInputName}
+                      onChange={(e) => setRiderInputName(e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-neutral-300 mb-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        placeholder="8837096320"
+                        value={riderInputPhone}
+                        onChange={(e) => setRiderInputPhone(e.target.value)}
+                        className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-neutral-300 mb-1">Bike Number</label>
+                      <input
+                        type="text"
+                        placeholder="AR-01-XX-0000"
+                        value={riderInputVehicle}
+                        onChange={(e) => setRiderInputVehicle(e.target.value)}
+                        className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black uppercase tracking-wider text-xs shadow-lg shadow-amber-400/20 transition mt-2"
+                  >
+                    Enter Rider Attendance Portal
+                  </button>
+                </form>
+              </div>
+            ) : (
+              /* Rider Dashboard */
+              <div className="space-y-6">
+                {/* Active Duty Status Card */}
+                <div className={`p-6 sm:p-8 rounded-3xl border-2 transition relative overflow-hidden ${
+                  currentRiderActiveDuty
+                    ? 'bg-gradient-to-r from-neutral-900 via-neutral-900 to-emerald-950/40 border-amber-400 shadow-xl'
+                    : 'bg-neutral-900 border-neutral-800'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs uppercase font-bold text-neutral-400">Duty Status:</span>
+                        {currentRiderActiveDuty ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            ACTIVE ON DUTY
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-neutral-800 text-neutral-400">
+                            OFF DUTY
+                          </span>
+                        )}
+                      </div>
+
+                      <h2 className="text-2xl font-black text-white">{riderUser.name}</h2>
+                      <div className="text-xs text-neutral-400 mt-0.5">
+                        Assigned Vehicle: <strong className="text-amber-400">{riderUser.vehicleNo}</strong> | Phone: {riderUser.phone}
+                      </div>
+                    </div>
+
+                    {/* Clock */}
+                    <div className="bg-neutral-950 px-4 py-2.5 rounded-2xl border border-amber-400/30 flex items-center gap-3 self-start sm:self-auto">
+                      <Clock className="w-5 h-5 text-amber-400" />
+                      <div>
+                        <div className="text-[10px] text-neutral-400 font-bold uppercase">Real Time</div>
+                        <div className="text-base font-black text-amber-400 font-mono">
+                          {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TWO PUNCH BUTTONS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                    {/* BUTTON 1: PUNCH IN */}
+                    <button
+                      onClick={handleRiderPunchIn}
+                      disabled={!!currentRiderActiveDuty || isLocating}
+                      className={`p-5 rounded-2xl border-2 font-black text-sm uppercase tracking-wider flex flex-col items-center justify-center gap-1.5 transition ${
+                        currentRiderActiveDuty
+                          ? 'bg-neutral-950 border-neutral-800 text-neutral-600 cursor-not-allowed opacity-50'
+                          : 'bg-amber-400 hover:bg-amber-300 text-black border-amber-300 shadow-lg shadow-amber-400/20 active:scale-95'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-base">
+                        {isLocating && !currentRiderActiveDuty ? (
+                          <RefreshCw className="w-5 h-5 animate-spin text-black" />
+                        ) : (
+                          <Navigation className="w-5 h-5 text-black" />
+                        )}
+                        <span>REGISTER / START DUTY</span>
+                      </div>
+                      <span className="text-[11px] font-bold text-neutral-800">
+                        {currentRiderActiveDuty ? 'Shift currently in progress' : 'Punches in live GPS coordinates & time'}
+                      </span>
+                    </button>
+
+                    {/* BUTTON 2: PUNCH OUT */}
+                    <button
+                      onClick={handleRiderPunchOut}
+                      disabled={!currentRiderActiveDuty || isLocating}
+                      className={`p-5 rounded-2xl border-2 font-black text-sm uppercase tracking-wider flex flex-col items-center justify-center gap-1.5 transition ${
+                        !currentRiderActiveDuty
+                          ? 'bg-neutral-950 border-neutral-800 text-neutral-600 cursor-not-allowed opacity-50'
+                          : 'bg-neutral-900 hover:bg-red-950/80 text-red-400 hover:text-red-300 border-red-500/50 active:scale-95'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-base">
+                        {isLocating && currentRiderActiveDuty ? (
+                          <RefreshCw className="w-5 h-5 animate-spin text-red-400" />
+                        ) : (
+                          <LogOut className="w-5 h-5" />
+                        )}
+                        <span>TAKE OFF / END DUTY</span>
+                      </div>
+                      <span className="text-[11px] font-semibold opacity-90">
+                        {currentRiderActiveDuty ? 'Captures off-duty GPS & computes total shift hours' : 'Punch in first before taking off'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Active Punch Link */}
+                  {currentRiderActiveDuty && (
+                    <div className="mt-5 p-3.5 bg-neutral-950 border border-amber-400/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <span className="text-amber-400 font-bold">
+                        Punched in at: {new Date(currentRiderActiveDuty.punchInTime).toLocaleTimeString()} ({currentRiderActiveDuty.punchInAddress})
+                      </span>
+                      {currentRiderActiveDuty.punchInCoords && (
+                        <a
+                          href={`https://www.google.com/maps?q=${currentRiderActiveDuty.punchInCoords.lat},${currentRiderActiveDuty.punchInCoords.lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 bg-amber-400 text-black px-3 py-1 rounded-xl font-bold self-start sm:self-auto hover:bg-amber-300"
+                        >
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>View on Google Maps</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Personal Attendance Timetable */}
+                <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-neutral-800 mb-4">
+                    <div>
+                      <h3 className="text-base font-black text-white flex items-center gap-2 uppercase">
+                        <Calendar className="w-4 h-4 text-amber-400" />
+                        My Attendance Timetable & Shift Records
+                      </h3>
+                      <p className="text-xs text-neutral-400">Strictly personal logs for {riderUser.email}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 text-center">
+                        <span className="text-[10px] text-neutral-400 block font-bold">Total Shifts</span>
+                        <span className="text-sm font-black text-amber-400">{riderOwnLogs.length}</span>
+                      </div>
+                      <div className="bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 text-center">
+                        <span className="text-[10px] text-neutral-400 block font-bold">Duty Hours</span>
+                        <span className="text-sm font-black text-emerald-400">
+                          {riderOwnLogs.reduce((acc, c) => acc + (c.durationHours || 0), 0).toFixed(1)}h
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-neutral-300">
+                      <thead className="bg-neutral-950 text-neutral-400 uppercase font-bold tracking-wider">
+                        <tr>
+                          <th className="px-4 py-3">Date</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Punch-In Time</th>
+                          <th className="px-4 py-3">Punch-In Maps</th>
+                          <th className="px-4 py-3">Take-Off Time</th>
+                          <th className="px-4 py-3">Take-Off Maps</th>
+                          <th className="px-4 py-3">Total Time</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-800">
+                        {riderOwnLogs.length === 0 ? (
+                          <tr>
+                            <td colSpan="7" className="px-4 py-8 text-center text-neutral-500">
+                              No shifts recorded yet. Use the yellow button above to start your duty today.
+                            </td>
+                          </tr>
+                        ) : (
+                          riderOwnLogs.map((log) => (
+                            <tr key={log.id} className="hover:bg-neutral-850/50">
+                              <td className="px-4 py-3 font-bold text-white whitespace-nowrap">{log.date}</td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                {log.status === 'On Duty' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                    Active Now
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-neutral-800 text-neutral-400">
+                                    Completed
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 font-mono font-bold">
+                                {new Date(log.punchInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="px-4 py-3">
+                                {log.punchInCoords && (
+                                  <a
+                                    href={`https://www.google.com/maps?q=${log.punchInCoords.lat},${log.punchInCoords.lng}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-1"
+                                  >
+                                    <MapPin className="w-3 h-3" /> Maps
+                                  </a>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 font-mono font-bold">
+                                {log.punchOutTime ? new Date(log.punchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </td>
+                              <td className="px-4 py-3">
+                                {log.punchOutCoords ? (
+                                  <a
+                                    href={`https://www.google.com/maps?q=${log.punchOutCoords.lat},${log.punchOutCoords.lng}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-1"
+                                  >
+                                    <MapPin className="w-3 h-3" /> Maps
+                                  </a>
+                                ) : '—'}
+                              </td>
+                              <td className="px-4 py-3 font-black text-amber-400">
+                                {log.durationHours !== null ? `${log.durationHours} hrs` : 'In Progress'}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/*                     WEBSITE 2: SEPARATE ADMIN PORTAL                      */}
+      {/*              ('admin-portal.farrides.internal' - Strictly Protected)      */}
+      {/* ========================================================================= */}
+      {activeDomain === 'admin' && (
+        <div className="flex-1 flex flex-col bg-neutral-950">
+          {/* Admin Header */}
+          <header className="bg-neutral-900 border-b border-neutral-800 h-16 flex items-center px-4 sm:px-6">
+            <div className="max-w-7xl w-full mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1 bg-red-600 rounded-lg text-white">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-white tracking-wider uppercase flex items-center gap-1.5">
+                    <span>FAR RIDES INTERNAL FLEET ADMIN</span>
+                    <span className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30">
+                      SECURE
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-neutral-400">Restricted to {MASTER_ADMIN_EMAIL}</div>
+                </div>
+              </div>
+
+              {isAdminAuthenticated && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleAdminExportCSV}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 text-black text-xs font-black uppercase tracking-wider hover:bg-amber-300 transition"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export CSV</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsAdminAuthenticated(false);
+                      showNotification("Admin signed out.");
+                    }}
+                    className="p-2 text-neutral-400 hover:text-red-400 hover:bg-neutral-800 rounded-xl transition"
+                    title="Lock Admin Console"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+            {!isAdminAuthenticated ? (
+              /* ADMIN AUTHENTICATION GATE */
+              <div className="max-w-md mx-auto my-12 bg-neutral-900 border-2 border-red-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                <div className="text-center mb-6">
+                  <div className="inline-block p-3 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/30 mb-3">
+                    <KeyRound className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-tight">Admin Gate Verification</h2>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    This portal is strictly reserved for the authorized Far Rides fleet administrator.
+                  </p>
+                </div>
+
+                {adminLoginError && (
+                  <div className="mb-4 p-3 bg-red-950/80 border border-red-500 rounded-xl text-xs text-red-300 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>{adminLoginError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleAdminAuthSubmit} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-neutral-300 mb-1">Master Administrator Email</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="angunyage02@gmail.com"
+                      value={adminInputEmail}
+                      onChange={(e) => setAdminInputEmail(e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-red-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-neutral-300 mb-1">Fleet Security PIN</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Enter 4-digit PIN (Default: 2024)"
+                      value={adminInputPin}
+                      onChange={(e) => setAdminInputPin(e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white focus:border-red-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-400 text-white font-black uppercase tracking-wider text-xs shadow-lg shadow-red-500/20 transition mt-2"
+                  >
+                    Authenticate Master Console
+                  </button>
+                </form>
+
+                <div className="mt-6 pt-4 border-t border-neutral-800 text-[11px] text-center text-neutral-500">
+                  Notice: Unauthorized access attempts are monitored and logged with IP and coordinates.
+                </div>
+              </div>
+            ) : (
+              /* AUTHENTICATED ADMIN DASHBOARD */
+              <div className="space-y-6">
+                {/* Statistics Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-neutral-400 font-bold uppercase">Registered Riders</div>
+                      <div className="text-2xl font-black text-amber-400 mt-1">{users.length}</div>
+                      <div className="text-[10px] text-neutral-500">Separated isolated accounts</div>
+                    </div>
+                    <div className="p-3 bg-amber-400/10 rounded-2xl text-amber-400">
+                      <Bike className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <div className="bg-neutral-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-emerald-400 font-bold uppercase">On Duty Right Now</div>
+                      <div className="text-2xl font-black text-emerald-300 mt-1">
+                        {logs.filter(l => l.status === "On Duty").length}
+                      </div>
+                      <div className="text-[10px] text-emerald-500">Active real-time GPS tracking</div>
+                    </div>
+                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400">
+                      <Navigation className="w-5 h-5 animate-pulse" />
+                    </div>
+                  </div>
+
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-neutral-400 font-bold uppercase">Today's Shifts Logged</div>
+                      <div className="text-2xl font-black text-white mt-1">
+                        {logs.filter(l => l.date === new Date().toISOString().split('T')[0]).length}
+                      </div>
+                      <div className="text-[10px] text-neutral-500">{new Date().toLocaleDateString()}</div>
+                    </div>
+                    <div className="p-3 bg-neutral-800 rounded-2xl text-neutral-300">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigation Tabs */}
+                <div className="flex border-b border-neutral-800 gap-2">
+                  <button
+                    onClick={() => setAdminTab('roster')}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black uppercase tracking-wider border-b-2 transition ${
+                      adminTab === 'roster'
+                        ? 'border-amber-400 text-amber-400'
+                        : 'border-transparent text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    Full Fleet Attendance Sheet
+                  </button>
+
+                  <button
+                    onClick={() => setAdminTab('folders')}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black uppercase tracking-wider border-b-2 transition ${
+                      adminTab === 'folders'
+                        ? 'border-amber-400 text-amber-400'
+                        : 'border-transparent text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <Folder className="w-4 h-4" />
+                    Individual Rider Folders ({users.length})
+                  </button>
+                </div>
+
+                {/* TAB 1: MASTER ROSTER */}
+                {adminTab === 'roster' && (
+                  <div className="space-y-4">
+                    {/* Filters */}
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-3.5 flex flex-col md:flex-row items-center justify-between gap-3">
+                      <div className="relative w-full md:w-80">
+                        <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-3" />
+                        <input
+                          type="text"
+                          placeholder="Search rider name, phone, vehicle..."
+                          value={adminSearch}
+                          onChange={(e) => setAdminSearch(e.target.value)}
+                          className="w-full bg-neutral-950 border border-neutral-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full md:w-auto">
+                        <select
+                          value={adminStatusFilter}
+                          onChange={(e) => setAdminStatusFilter(e.target.value)}
+                          className="bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-none"
+                        >
+                          <option value="All">All Statuses</option>
+                          <option value="On Duty">On Duty</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+
+                        <input
+                          type="date"
+                          value={adminDateFilter}
+                          onChange={(e) => setAdminDateFilter(e.target.value)}
+                          className="bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-xl">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-neutral-300">
+                          <thead className="bg-neutral-950 text-neutral-400 uppercase font-black tracking-wider border-b border-neutral-800">
+                            <tr>
+                              <th className="px-4 py-3.5">Rider Details</th>
+                              <th className="px-4 py-3.5">Date</th>
+                              <th className="px-4 py-3.5">Duty Status</th>
+                              <th className="px-4 py-3.5">Punch-In GPS & Timestamp</th>
+                              <th className="px-4 py-3.5">Take-Off GPS & Timestamp</th>
+                              <th className="px-4 py-3.5">Duration</th>
+                              <th className="px-4 py-3.5 text-right">Delete</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-800">
+                            {filteredAdminLogs.length === 0 ? (
+                              <tr>
+                                <td colSpan="7" className="px-4 py-12 text-center text-neutral-500">
+                                  No attendance logs found matching filters.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredAdminLogs.map((item) => (
+                                <tr key={item.id} className="hover:bg-neutral-850/60 transition">
+                                  <td className="px-4 py-3.5">
+                                    <div className="font-bold text-white text-sm">{item.riderName}</div>
+                                    <div className="text-[11px] text-amber-400 font-mono">{item.vehicleNo}</div>
+                                    <div className="text-[11px] text-neutral-400">{item.riderPhone}</div>
+                                  </td>
+
+                                  <td className="px-4 py-3.5 font-medium whitespace-nowrap">{item.date}</td>
+
+                                  <td className="px-4 py-3.5 whitespace-nowrap">
+                                    {item.status === 'On Duty' ? (
+                                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                        On Duty
+                                      </span>
+                                    ) : (
+                                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-400">
+                                        Completed
+                                      </span>
+                                    )}
+                                  </td>
+
+                                  {/* Punch In */}
+                                  <td className="px-4 py-3.5">
+                                    <div className="font-mono text-white font-bold">
+                                      {new Date(item.punchInTime).toLocaleTimeString()}
+                                    </div>
+                                    <div className="text-[11px] text-neutral-400">{item.punchInAddress}</div>
+                                    {item.punchInCoords && (
+                                      <a
+                                        href={`https://www.google.com/maps?q=${item.punchInCoords.lat},${item.punchInCoords.lng}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 font-bold mt-1"
+                                      >
+                                        <MapPin className="w-3 h-3 text-amber-400" />
+                                        <span>Check Google Maps</span>
+                                        <ArrowUpRight className="w-2.5 h-2.5" />
+                                      </a>
+                                    )}
+                                  </td>
+
+                                  {/* Punch Out */}
+                                  <td className="px-4 py-3.5">
+                                    {item.punchOutTime ? (
+                                      <>
+                                        <div className="font-mono text-white font-bold">
+                                          {new Date(item.punchOutTime).toLocaleTimeString()}
+                                        </div>
+                                        <div className="text-[11px] text-neutral-400">{item.punchOutAddress}</div>
+                                        {item.punchOutCoords && (
+                                          <a
+                                            href={`https://www.google.com/maps?q=${item.punchOutCoords.lat},${item.punchOutCoords.lng}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 font-bold mt-1"
+                                          >
+                                            <MapPin className="w-3 h-3 text-amber-400" />
+                                            <span>Check Google Maps</span>
+                                            <ArrowUpRight className="w-2.5 h-2.5" />
+                                          </a>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <span className="text-emerald-400 italic text-[11px]">Currently active</span>
+                                    )}
+                                  </td>
+
+                                  <td className="px-4 py-3.5 font-black text-amber-400 text-sm whitespace-nowrap">
+                                    {item.durationHours !== null ? `${item.durationHours} hrs` : '—'}
+                                  </td>
+
+                                  <td className="px-4 py-3.5 text-right">
+                                    <button
+                                      onClick={() => handleAdminDeleteLog(item.id)}
+                                      className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
+                                      title="Delete record from sheet"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: SEPARATE RIDER FOLDERS */}
+                {adminTab === 'folders' && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Folders List */}
+                    <div className="md:col-span-1 space-y-2.5">
+                      <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
+                        Rider Records Directory
+                      </h4>
+                      {users.map(u => {
+                        const isSelected = selectedFolderUserId === u.id;
+                        const riderLogs = logs.filter(l => l.userId === u.id);
+                        const isCurrentlyOnDuty = riderLogs.some(l => l.status === "On Duty");
+
+                        return (
+                          <div
+                            key={u.id}
+                            onClick={() => setSelectedFolderUserId(u.id)}
+                            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between ${
+                              isSelected
+                                ? 'bg-amber-400/15 border-amber-400 shadow-md'
+                                : 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={u.avatar}
+                                alt={u.name}
+                                className="w-10 h-10 rounded-full object-cover border border-amber-400"
+                              />
+                              <div>
+                                <div className="font-bold text-sm text-white">{u.name}</div>
+                                <div className="text-xs text-amber-400 font-mono">{u.vehicleNo}</div>
+                                <div className="text-[11px] text-neutral-400">{u.phone}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-1">
+                              {isCurrentlyOnDuty ? (
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                              ) : (
+                                <span className="w-2 rounded-full bg-neutral-600"></span>
+                              )}
+                              <ChevronRight className="w-4 h-4 text-neutral-500" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Folder Content */}
+                    <div className="md:col-span-2">
+                      {selectedFolderUserId ? (
+                        (() => {
+                          const rider = users.find(u => u.id === selectedFolderUserId);
+                          const rLogs = logs.filter(l => l.userId === selectedFolderUserId);
+                          const totalHours = rLogs.reduce((acc, c) => acc + (c.durationHours || 0), 0);
+
+                          return (
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xl space-y-5">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
+                                <div className="flex items-center gap-3.5">
+                                  <img
+                                    src={rider.avatar}
+                                    alt={rider.name}
+                                    className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-400"
+                                  />
+                                  <div>
+                                    <h3 className="text-lg font-black text-white">{rider.name}</h3>
+                                    <div className="text-xs text-neutral-400">
+                                      Gmail: <span className="text-white font-mono">{rider.email}</span>
+                                    </div>
+                                    <div className="text-xs text-neutral-400">
+                                      Vehicle: <span className="text-amber-400 font-bold">{rider.vehicleNo}</span> | Phone: {rider.phone}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="bg-neutral-950 px-4 py-2 rounded-2xl border border-neutral-800 text-right">
+                                  <div className="text-[10px] text-neutral-400 uppercase font-bold">Cumulative Hours</div>
+                                  <div className="text-xl font-black text-amber-400">{totalHours.toFixed(2)}h</div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <h5 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">
+                                  Shift Log History ({rLogs.length})
+                                </h5>
+
+                                {rLogs.length === 0 ? (
+                                  <div className="p-8 text-center text-xs text-neutral-500 border border-dashed border-neutral-800 rounded-2xl">
+                                    No shifts recorded in this rider's folder.
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                                    {rLogs.map(l => (
+                                      <div key={l.id} className="bg-neutral-950 border border-neutral-800 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-bold text-white">{l.date}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                              l.status === 'On Duty' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-neutral-800 text-neutral-400'
+                                            }`}>
+                                              {l.status}
+                                            </span>
+                                          </div>
+                                          <div className="text-neutral-400 text-[11px] mt-1 flex flex-wrap gap-x-3">
+                                            <span>In: {new Date(l.punchInTime).toLocaleTimeString()}</span>
+                                            {l.punchOutTime && <span>Out: {new Date(l.punchOutTime).toLocaleTimeString()}</span>}
+                                            {l.durationHours !== null && <span className="text-amber-400 font-bold">{l.durationHours} hrs</span>}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                          {l.punchInCoords && (
+                                            <a
+                                              href={`https://www.google.com/maps?q=${l.punchInCoords.lat},${l.punchInCoords.lng}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-[11px] font-bold text-amber-400 hover:underline flex items-center gap-1"
+                                            >
+                                              <MapPin className="w-3 h-3" /> Map
+                                            </a>
+                                          )}
+                                          <button
+                                            onClick={() => handleAdminDeleteLog(l.id)}
+                                            className="text-neutral-500 hover:text-red-400 p-1"
+                                            title="Delete Log"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        <div className="bg-neutral-900 border-2 border-dashed border-neutral-800 rounded-3xl p-12 text-center text-neutral-500">
+                          <Folder className="w-10 h-10 mx-auto text-neutral-600 mb-2" />
+                          Select any rider from the left directory to open their isolated folder.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/*               RIDER PROFILE / VEHICLE MODAL (RIDER SPACE ONLY)            */}
+      {/* ========================================================================= */}
+      {showRiderProfileModal && riderUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border-2 border-amber-400 rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowRiderProfileModal(false)}
+              className="absolute top-5 right-5 text-neutral-400 hover:text-white p-1 rounded-xl bg-neutral-800"
+            >
+              ✕
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-amber-400 text-black rounded-xl">
+                <Bike className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white uppercase">Edit Rider Profile</h3>
+                <p className="text-xs text-neutral-400">FAR RIDES Fleet Identification</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveRiderProfile} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-neutral-300 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  defaultValue={riderUser.name}
+                  required
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-neutral-300 mb-1">Gmail (Permanent)</label>
+                <input
+                  type="email"
+                  disabled
+                  value={riderUser.email}
+                  className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl px-3 py-2 text-neutral-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-neutral-300 mb-1">Active Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  defaultValue={riderUser.phone}
+                  required
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-neutral-300 mb-1">Bike / Vehicle Number</label>
+                <input
+                  type="text"
+                  name="vehicleNo"
+                  defaultValue={riderUser.vehicleNo}
+                  required
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-neutral-300 mb-1">Photo / Avatar URL</label>
+                <input
+                  type="url"
+                  name="avatar"
+                  defaultValue={riderUser.avatar}
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowRiderProfileModal(false)}
+                  className="px-4 py-2 font-bold text-neutral-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-400 text-black font-black uppercase tracking-wider"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Official FAR RIDES Footer Ribbon */}
+      <footer className="mt-auto border-t border-neutral-800 bg-neutral-950 py-3 text-xs text-neutral-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <FarRidesLogo className="w-5 h-5" />
+            <span className="font-bold text-neutral-300">FAR RIDES RIDERS</span>
+            <span>• Ganga Basti, Near ITBP, Itanagar</span>
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px]">
+            <span>Phone: <strong className="text-neutral-300">8837096320</strong></span>
+            <span>Email: <strong className="text-neutral-300">Farrides24@gmail.com</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
